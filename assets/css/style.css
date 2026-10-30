@@ -40,3 +40,28 @@ body {
     background-color: #eee;
     font-weight: 600;
 }
+
+.btn-accept,
+.btn-reject {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+}
+
+.btn-accept {
+    background-color: #2e7d32;
+}
+
+.btn-reject {
+    background-color: #c62828;
+}
+
+.btn-accept:hover {
+    background-color: #1b5e20;
+}
+
+.btn-reject:hover {
+    background-color: #b71c1c;
+}
