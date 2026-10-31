@@ -37,6 +37,7 @@ if (
 }
 
 $incomingRequests = [];
+$receivedBooks = [];
 
 if ($currentStudentId !== null) {
 
@@ -68,26 +69,33 @@ if ($currentStudentId !== null) {
 	]);
 
 	$incomingRequests = $requestStmt->fetchAll(PDO::FETCH_ASSOC);
+
+	$receivedBooksStmt = $pdo->prepare(
+		"SELECT
+				b.title,
+				s.name AS owner_name,
+				r.status
+			FROM requests r
+			JOIN books b
+				ON r.book_id = b.id
+			JOIN students s
+				ON b.owner_id = s.id
+			WHERE r.borrower_id = :borrower_id
+			AND r.status = 'ACCEPTED'
+			ORDER BY r.id DESC"
+	);
+
+	$receivedBooksStmt->execute([
+		'borrower_id' => $currentStudentId
+	]);
+
+	$receivedBooks = $receivedBooksStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 $bookStmt = $pdo->query(
 	"SELECT
         b.id,
-        b.title,
-        s.name AS owner_name,
-        b.status
-     FROM books b
-     JOIN students s
-        ON b.owner_id = s.id
-     ORDER BY b.id DESC"
-);
-
-$books = $bookStmt->fetchAll(PDO::FETCH_ASSOC);
-
-$bookStmt = $pdo->query(
-	"SELECT
-        b.id,
-        b.owner_id,
+		b.owner_id,
         b.title,
         s.name AS owner_name,
         b.status
@@ -365,6 +373,44 @@ $books = $bookStmt->fetchAll(PDO::FETCH_ASSOC);
 
 			<?php endif; ?>
 
+		</div>
+
+		<div class="card">
+			<h2>Received Books</h2>
+
+			<?php if ($currentStudentId === null): ?>
+
+				<p>Select a student first.</p>
+
+			<?php elseif (empty($receivedBooks)): ?>
+
+				<p>You have not received any books yet.</p>
+
+			<?php else: ?>
+
+				<div class="table-wrapper">
+					<table class="books-table">
+						<thead>
+							<tr>
+								<th scope="col">Book Title</th>
+								<th scope="col">Owner</th>
+								<th scope="col">Status</th>
+							</tr>
+						</thead>
+
+						<tbody>
+							<?php foreach ($receivedBooks as $book): ?>
+								<tr>
+									<td><?= htmlspecialchars($book['title'], ENT_QUOTES, 'UTF-8') ?></td>
+									<td><?= htmlspecialchars($book['owner_name'], ENT_QUOTES, 'UTF-8') ?></td>
+									<td><?= htmlspecialchars($book['status'], ENT_QUOTES, 'UTF-8') ?></td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+
+			<?php endif; ?>
 		</div>
 
 	</main>
