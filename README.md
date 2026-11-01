@@ -1,24 +1,78 @@
 # Peer-to-Peer Student Book Exchange Portal
 
-A small campus book-lending portal built with **HTML, CSS, JavaScript/jQuery, PHP, and PostgreSQL**. It is designed to run locally through **Apache in XAMPP**. The database is managed with PostgreSQL and pgAdmin 4.
+A campus book-lending portal that allows students to list books, request books listed by other students, and manage requests for books they own.
 
-> **Project status:** The active-student selector, book-submission flow, and all-listed-books table are implemented. The Request Book and incoming-request accept/reject workflows are still being built. The schema below includes the `requests` table for those upcoming features.
+The application runs locally using **PHP on Apache (XAMPP)** and stores its data in **PostgreSQL**. Database access is handled through **PDO with the PostgreSQL PDO driver (`pdo_pgsql`)**.
 
-## 1. Requirements
+## Features in the current codebase
 
-Install these tools on Windows:
+- **Active student selector:** Loads students from PostgreSQL. Changing the selection submits a GET request with `student_id`.
+- **List a book:** Adds a book for the currently selected student. New books use the database default status `AVAILABLE`.
+- **All listed books:** Displays each book's title, owner's name, and status.
+- **Request a book:** Shows a Request Book form for an available book owned by another student. The backend checks that the book exists, that the borrower is not its owner, and that the book is available before inserting a request.
+- **Incoming requests:** Displays pending requests for books owned by the selected student.
+- **Accept a request:** Accepts the selected request, rejects the other pending requests for that book, and changes the book status to `LENT` within one database transaction.
+- **Reject a request:** Changes the selected pending request to `REJECTED` after checking that the selected student owns the book.
+- **Received Books:** Displays books for which the selected student has an `ACCEPTED` request.
 
-- **Git for Windows** — to clone the repository: <https://git-scm.com/download/win>
-- **XAMPP** — provides Apache and PHP: <https://www.apachefriends.org/>
-- **PostgreSQL** — the database server: <https://www.postgresql.org/download/windows/>
-- **pgAdmin 4** — usually installed with the PostgreSQL Windows installer; used to create the database and run SQL queries.
-- **Visual Studio Code** (recommended) — to edit the project: <https://code.visualstudio.com/>
+The active student selector is a development convenience, not an authentication system. The application does not implement user accounts or login authentication.
 
-This setup assumes XAMPP is installed at `C:\xampp` and PostgreSQL listens on port `5432`. Use your actual paths, port, username, and password if they differ.
+## Technology used
 
-## 2. Download the project into XAMPP's `htdocs`
+- HTML
+- CSS
+- PHP
+- Apache through XAMPP
+- PostgreSQL
+- PDO (`pdo_pgsql`)
+- pgAdmin 4 for database administration
 
-### Option A: Clone with Git (recommended)
+`assets/js/app.js` exists in the repository but is currently empty. The current page uses standard HTML form submissions and does not implement jQuery or AJAX interactions.
+
+## Project structure
+
+```text
+Book_Portal/
+├── index.php                 # Main page and database reads
+├── actions.php               # POST handlers for book and request actions
+├── README.md
+├── .gitignore
+├── config/
+│   └── db.example.php        # Example PDO connection configuration
+└── assets/
+    ├── css/
+    │   └── style.css         # Page and table styling
+    └── js/
+        └── app.js            # Currently empty
+```
+
+The local `config/db.php` file is created during setup and is ignored by Git because it contains database credentials.
+
+---
+
+## Local setup (Windows)
+
+These instructions assume:
+
+- XAMPP is installed at `C:\xampp`.
+- PostgreSQL is installed separately and listens on port `5432`.
+- The PostgreSQL database is named `book_portal_db`.
+
+If your installation uses a different path, port, database name, or username, use your actual values in the relevant steps.
+
+### 1. Install the required software
+
+Install:
+
+- [XAMPP](https://www.apachefriends.org/) — provides Apache and PHP.
+- [PostgreSQL](https://www.postgresql.org/download/windows/) — database server.
+- [pgAdmin 4](https://www.pgadmin.org/download/) — graphical tool for managing PostgreSQL databases.
+- [Git for Windows](https://git-scm.com/download/win) — to clone the repository.
+- [Visual Studio Code](https://code.visualstudio.com/) — optional, for editing the project.
+
+PostgreSQL is separate from XAMPP. The MySQL service bundled with XAMPP is not used by this application.
+
+### 2. Put the project inside XAMPP's `htdocs` directory
 
 Open PowerShell and run:
 
@@ -28,63 +82,48 @@ git clone https://github.com/ZapRaptor/Book_Portal.git
 cd Book_Portal
 ```
 
-The project folder should be:
+The project directory should be:
 
 ```text
 C:\xampp\htdocs\Book_Portal\
-├── index.php
-├── actions.php
-├── config\
-│   └── db.example.php
-└── assets\
-    ├── css\
-    │   └── style.css
-    └── js\
-        └── app.js
 ```
 
-If you already have the project folder, **do not clone it over the existing folder**. Open that folder instead. Later, to download teammates' or GitHub changes, run `git pull` from the project directory.
+If you have already cloned the repository, open the existing `Book_Portal` folder instead of cloning it again.
 
-### Option B: Download as a ZIP
-
-1. Open the repository on GitHub: <https://github.com/ZapRaptor/Book_Portal>.
-2. Choose **Code → Download ZIP**.
-3. Extract the contents so the `index.php` file is directly inside `C:\xampp\htdocs\Book_Portal\`.
-4. Avoid accidentally creating a nested path such as `C:\xampp\htdocs\Book_Portal\Book_Portal\index.php`.
-
-## 3. Start Apache in XAMPP
+### 3. Start Apache and PostgreSQL
 
 1. Open **XAMPP Control Panel**.
-2. Click **Start** beside **Apache**.
-3. Confirm Apache starts without an error.
+2. Click **Start** next to **Apache**.
+3. Make sure the PostgreSQL Windows service is running. Starting Apache does not start PostgreSQL.
+4. Open pgAdmin 4 and connect to your PostgreSQL server.
 
-You do **not** need to run `php -S ...` when using XAMPP's Apache server. Keep in mind that XAMPP's MySQL service is not needed for this project; the database is PostgreSQL.
+### 4. Create the PostgreSQL database
 
-## 4. Start PostgreSQL and create the database
+In pgAdmin 4:
 
-1. Install PostgreSQL using the official Windows installer if it is not installed already.
-2. Ensure the PostgreSQL Windows service is running. PostgreSQL is separate from XAMPP; starting Apache does not start PostgreSQL.
-3. Open **pgAdmin 4** and connect to your PostgreSQL server (often named `PostgreSQL 18`).
-4. Right-click **Databases → Create → Database...**.
-5. Set the database name to:
+1. Connect to your PostgreSQL server.
+2. Right-click **Databases** and choose **Create → Database**.
+3. Set the database name to:
 
    ```text
    book_portal_db
    ```
 
-6. Open the new `book_portal_db` database, then choose **Tools → Query Tool**.
-7. Run the schema SQL below.
+4. Select the new database in the Object Explorer.
+5. Open **Tools → Query Tool**.
 
-## 5. Create the database tables
+### 5. Create the tables
 
-Run this once in the **new, empty** `book_portal_db` database. If you already created these tables, do not re-run the script blindly; inspect your existing schema first.
+Run the following SQL in the Query Tool connected to `book_portal_db`. This script is for a new, empty database; do not run it again over tables that already exist.
 
 ```sql
+-- Students who can list and borrow books.
 CREATE TABLE students (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL
 );
 
+-- Books listed by students.
 CREATE TABLE books (
     id SERIAL PRIMARY KEY,
     owner_id INT NOT NULL
@@ -95,6 +134,7 @@ CREATE TABLE books (
         CHECK (status IN ('AVAILABLE', 'LENT'))
 );
 
+-- Borrow requests made by students.
 CREATE TABLE requests (
     id SERIAL PRIMARY KEY,
     book_id INT NOT NULL
@@ -109,39 +149,41 @@ CREATE TABLE requests (
 );
 ```
 
-### Optional: Insert sample students
+The tables are related as follows:
 
-The student dropdown needs records in `students`. For an empty database, run:
+- `books.owner_id` references `students.id` and identifies the student who listed a book.
+- `requests.book_id` references `books.id` and identifies the requested book.
+- `requests.borrower_id` references `students.id` and identifies the student who made the request.
+- The foreign keys use `ON DELETE CASCADE`, so deleting a referenced student or book also deletes dependent records.
+- A book status is either `AVAILABLE` or `LENT`.
+- A request status is `PENDING`, `ACCEPTED`, or `REJECTED`.
+- `UNIQUE (borrower_id, book_id)` prevents duplicate request rows for the same student-book pair. Under this schema, a student cannot create another request row for the same book after an earlier request has been rejected.
+
+### 6. Add student records
+
+The student selector needs rows in the `students` table. For a new database, add sample students using pgAdmin's Query Tool:
 
 ```sql
 INSERT INTO students (name)
-VALUES ('Ayush'), ('Anshika'), ('Manikanta');
+VALUES
+    ('Ayush'),
+    ('Anshika'),
+    ('Manikanta');
 ```
 
-If you already have students, skip this insert to avoid adding duplicates. Verify the students with:
+Run this insert once. If student records already exist, do not run it again unless you intend to add those names again.
+
+Verify the records:
 
 ```sql
 SELECT * FROM students ORDER BY id;
 ```
 
-Check the books and requests tables with:
+Books can then be added through the portal's **List a book for lending** form.
 
-```sql
-SELECT * FROM books;
-SELECT * FROM requests;
-```
+### 7. Enable PHP's PostgreSQL PDO driver
 
-### Schema notes
-
-- `SERIAL PRIMARY KEY` gives each row an automatically generated ID.
-- `books.owner_id` references the student who listed the book.
-- A book's status must be `AVAILABLE` or `LENT` (uppercase).
-- A request starts as `PENDING`; its allowed statuses are `PENDING`, `ACCEPTED`, and `REJECTED`.
-- `UNIQUE (borrower_id, book_id)` prevents the same student from creating multiple request rows for the same book. With this schema, that student cannot submit another row for the same book after a rejected request unless the database design is changed.
-
-## 6. Configure PHP to connect to PostgreSQL
-
-PHP needs the PDO PostgreSQL driver (`pdo_pgsql`).
+The PHP installation used by Apache must have `pdo_pgsql` enabled.
 
 1. Open XAMPP's PHP configuration file:
 
@@ -149,98 +191,192 @@ PHP needs the PDO PostgreSQL driver (`pdo_pgsql`).
    C:\xampp\php\php.ini
    ```
 
-2. Find the line below. If it is commented out with a leading semicolon, remove the semicolon:
+2. Find the following line:
+
+   ```ini
+   ;extension=pdo_pgsql
+   ```
+
+3. If it has a leading semicolon, remove it so it reads:
 
    ```ini
    extension=pdo_pgsql
    ```
 
-3. The `pgsql` extension can also be enabled if needed, but **PDO-based database connections require `pdo_pgsql`**.
 4. Save `php.ini`.
-5. In XAMPP Control Panel, click **Stop** for Apache, then **Start** again so PHP reloads its configuration.
+5. In XAMPP Control Panel, stop Apache and start it again so PHP reloads the configuration.
 
-If the extension is not available or PHP reports `could not find driver`, confirm the extension DLL exists in XAMPP's PHP `ext` directory and check Apache's PHP error log.
+If PHP reports `could not find driver`, check that the `pdo_pgsql` extension is available in the XAMPP PHP installation and that Apache is using the PHP configuration file you edited.
 
-## 7. Create your local database connection file
+### 8. Create the local database connection file
 
-The real connection file, `config/db.php`, is intentionally excluded from Git because it contains local credentials. The repository provides `config/db.example.php` as a template.
+The repository contains `config/db.example.php` with placeholder credentials. The actual `config/db.php` file is ignored by Git and must be created on each local installation.
 
-From PowerShell, inside `C:\xampp\htdocs\Book_Portal`, copy the example file:
+From PowerShell in the project root, copy the example file:
 
 ```powershell
 Copy-Item config\db.example.php config\db.php
 ```
 
-If you already have a working `config/db.php`, **keep it** instead of overwriting it. Otherwise, open `config/db.php` and set the correct database name, PostgreSQL username, and password. A PDO connection should follow this pattern:
+Open `config/db.php` and replace `YOUR_USERNAME` and `YOUR_PASSWORD` with the credentials for your PostgreSQL server. The example connection uses:
+
+- Host: `localhost`
+- Port: `5432`
+- Database: `book_portal_db`
+
+The connection file should have this structure:
 
 ```php
 <?php
 
 $pdo = new PDO(
-    'pgsql:host=localhost;port=5432;dbname=book_portal_db',
-    'YOUR_POSTGRES_USERNAME',
-    'YOUR_POSTGRES_PASSWORD',
+    "pgsql:host=localhost;port=5432;dbname=book_portal_db",
+    "YOUR_USERNAME",
+    "YOUR_PASSWORD",
     [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]
 );
 ```
 
-Replace the placeholder credentials with your own local PostgreSQL credentials. Never commit real passwords, production credentials, or private connection details.
+Keep your real `config/db.php` out of Git. The repository's `.gitignore` excludes `config/db.php` and `.env`. Do not put real database passwords in `db.example.php` or commit them to the repository.
 
-Check that `.gitignore` includes at least:
-
-```gitignore
-config/db.php
-.env
-```
-
-Keep `config/db.example.php` in Git, with placeholders only. If real credentials were ever committed to a public repository, remove them from the code and rotate/change those credentials; deleting the file in a later commit does not erase its history.
-
-## 8. Run the portal
+### 9. Run the portal
 
 1. Confirm Apache is running in XAMPP.
-2. Confirm the PostgreSQL service is running.
-3. Confirm `config/db.php` exists and contains the correct connection settings.
-4. Open this URL in a browser:
+2. Confirm PostgreSQL is running.
+3. Confirm `config/db.php` exists and contains the correct local credentials.
+4. Open the following URL in your browser:
 
-   <http://localhost/Book_Portal/>
-
-   Or go directly to <http://localhost/Book_Portal/index.php>.
-
-The site is available locally on your computer; this does not publish it to the public internet.
-
-## 9. Test the current features
-
-1. **Student switcher:** Select a student. The URL should include a query parameter such as `?student_id=2`.
-2. **Add a book:** Select a student, enter a title, and click **Add Book**. The new row should appear in PostgreSQL's `books` table with that student's ID as `owner_id` and status `AVAILABLE`.
-3. **All listed books:** The table should show each book's title, owner's name, and status.
-4. Verify data from pgAdmin, for example:
-
-   ```sql
-   SELECT b.id, b.title, s.name AS owner_name, b.status
-   FROM books AS b
-   JOIN students AS s ON s.id = b.owner_id
-   ORDER BY b.id DESC;
+   ```text
+   http://localhost/Book_Portal/
    ```
 
-Request submission and the owner-side accept/reject workflow are still under development. The completed workflow must validate requests server-side and use a single PostgreSQL transaction when accepting one request, rejecting competing pending requests for the same book, and marking that book as `LENT`.
+Apache serves `index.php` from the project directory. You do not need to start PHP's built-in development server when using XAMPP's Apache server.
 
-## 10. Common problems
+---
 
-| Problem | What to check |
+## Using the portal
+
+### Select an active student
+
+Use the **Logged in as** dropdown to select a student. Changing the selection submits a GET request and adds the selected student's ID to the URL as `student_id`.
+
+The selector is used to simulate which student is using the portal. It is not a login or authentication mechanism.
+
+### List a book
+
+1. Select the student who owns the book.
+2. Enter the book title in **List a book for lending**.
+3. Click **Add Book**.
+
+The form submits to `actions.php` using POST. The book is inserted with the selected student's ID as `owner_id`; PostgreSQL supplies the book ID and the default `AVAILABLE` status.
+
+### Request a book
+
+1. Select the student who wants to borrow a book.
+2. In **All Listed Books**, find a book owned by another student with status `AVAILABLE`.
+3. Click **Request Book**.
+
+The request is submitted to `actions.php`. New requests use the default status `PENDING`.
+
+### Review incoming requests
+
+Select the student who owns the book. The **Incoming Requests for Your Books** section displays that student's pending requests. The owner can select **Accept** or **Reject** for a request.
+
+- **Reject:** Changes the selected pending request to `REJECTED`.
+- **Accept:** Changes the selected request to `ACCEPTED`, changes other pending requests for the same book to `REJECTED`, and changes the book status to `LENT`. These updates are performed within a PostgreSQL transaction. The handler locks the book row with `FOR UPDATE` while processing the acceptance.
+
+### View received books
+
+The **Received Books** section displays books for which the selected student has an `ACCEPTED` request, along with the owner's name and request status.
+
+---
+
+## Verify database records
+
+Run these queries in pgAdmin's Query Tool while connected to `book_portal_db`.
+
+List books and their owners:
+
+```sql
+SELECT
+    b.id,
+    b.title,
+    s.name AS owner_name,
+    b.status
+FROM books AS b
+JOIN students AS s
+    ON b.owner_id = s.id
+ORDER BY b.id DESC;
+```
+
+List borrow requests:
+
+```sql
+SELECT
+    r.id,
+    b.title,
+    borrower.name AS borrower_name,
+    r.status
+FROM requests AS r
+JOIN books AS b
+    ON r.book_id = b.id
+JOIN students AS borrower
+    ON r.borrower_id = borrower.id
+ORDER BY r.id DESC;
+```
+
+View accepted requests and their book statuses:
+
+```sql
+SELECT
+    r.id AS request_id,
+    b.title,
+    owner.name AS owner_name,
+    borrower.name AS borrower_name,
+    r.status AS request_status,
+    b.status AS book_status
+FROM requests AS r
+JOIN books AS b
+    ON r.book_id = b.id
+JOIN students AS owner
+    ON b.owner_id = owner.id
+JOIN students AS borrower
+    ON r.borrower_id = borrower.id
+WHERE r.status = 'ACCEPTED'
+ORDER BY r.id DESC;
+```
+
+## Current scope
+
+The current codebase includes the student selector, book submission and listing, request submission, incoming-request management (accept/reject), and the Received Books view.
+
+The current codebase does **not** include:
+
+- User registration, login, or authenticated user sessions.
+- A book-return operation or a return-history workflow.
+- jQuery or AJAX interactions. Forms currently use standard browser GET/POST submissions.
+- A separate lending-ledger or loan-history table.
+
+The `assets/js/app.js` file is currently empty and is not loaded by `index.php`.
+
+## Troubleshooting
+
+| Problem | Checks |
 |---|---|
-| `403 Forbidden` | Confirm the project is inside `C:\xampp\htdocs\Book_Portal` and open `index.php` directly. |
-| `404 Not Found` | Check the folder name and that `index.php` is in the project root. |
+| `403 Forbidden` | Confirm the project is inside `C:\xampp\htdocs\Book_Portal` and open the project URL shown above. |
+| `404 Not Found` | Check the folder name and confirm `index.php` is in the `Book_Portal` root. |
 | `could not find driver` | Enable `extension=pdo_pgsql` in `C:\xampp\php\php.ini`, then restart Apache. |
-| Connection refused | Confirm PostgreSQL is running and the host/port are correct. |
-| Database does not exist | Ensure the database name in pgAdmin matches `dbname` in `config/db.php`. |
-| Relation/table does not exist | Run the schema SQL against `book_portal_db`, not another database. |
-| Invalid book status / check constraint | Use the exact uppercase status values `AVAILABLE` and `LENT`. |
-| CSS changes are not visible | Save `assets/css/style.css` and hard-refresh the page with `Ctrl + Shift + R`. |
+| PostgreSQL connection refused | Confirm the PostgreSQL service is running and the host and port in `config/db.php` are correct. |
+| Database does not exist | Confirm pgAdmin contains `book_portal_db` and that the name matches `dbname` in `config/db.php`. |
+| Relation/table does not exist | Run the table-creation SQL against `book_portal_db`. |
+| Book status check-constraint error | Use only the uppercase values `AVAILABLE` and `LENT`. |
+| Request status check-constraint error | Use only `PENDING`, `ACCEPTED`, or `REJECTED`. |
+| CSS changes do not appear | Save `assets/css/style.css` and hard-refresh the browser with `Ctrl + Shift + R`. |
 
-## 11. Development workflow with Git
+## Git workflow
 
 Run Git commands from the project root:
 
@@ -248,16 +384,8 @@ Run Git commands from the project root:
 cd C:\xampp\htdocs\Book_Portal
 git status
 git add .
-git commit -m "Describe the change"
+git commit -m "docs: update project documentation"
 git push
 ```
 
-Before committing, inspect `git status` and ensure `config/db.php` or other secret files are not staged.
-
-## Technology summary
-
-- **Frontend:** HTML5, CSS3, JavaScript/jQuery
-- **Backend:** PHP (running through Apache in XAMPP)
-- **Database:** PostgreSQL
-- **Database access:** PDO with the `pdo_pgsql` driver
-- **Database administration:** pgAdmin 4
+Before committing, check `git status` and confirm that `config/db.php` and any other files containing credentials are not staged.
